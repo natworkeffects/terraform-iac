@@ -1,3 +1,4 @@
+// data lake storage account
 resource "azurerm_storage_account" "dls" {
   name                      = "dls${local.suffix_concat}"
   resource_group_name       = data.terraform_remote_state.network.outputs.rg_name
@@ -20,11 +21,13 @@ resource "azurerm_storage_account" "dls" {
   }
 }
 
+// data lake storage synapse filesystem
 resource "azurerm_storage_data_lake_gen2_filesystem" "dfs_syn" {
   name               = "synapse"
   storage_account_id = azurerm_storage_account.dls.id
 }
 
+// synapse password
 resource "random_password" "syn_password" {
   length           = 16
   lower            = true
@@ -34,6 +37,7 @@ resource "random_password" "syn_password" {
   override_special = "!@#$%&*_=+?"
 }
 
+// synapse workspace
 resource "azurerm_synapse_workspace" "syn" {
   name                                 = "syn-${local.suffix_main}"
   resource_group_name                  = data.terraform_remote_state.network.outputs.rg_name
@@ -51,6 +55,7 @@ resource "azurerm_synapse_workspace" "syn" {
   }
 }
 
+// synapse dedicated pool
 resource "azurerm_synapse_sql_pool" "ddtpool" {
   name                 = "ddtpool"
   synapse_workspace_id = azurerm_synapse_workspace.syn.id
@@ -59,6 +64,7 @@ resource "azurerm_synapse_sql_pool" "ddtpool" {
   data_encrypted       = true
 }
 
+// synapse storage blob data contributor role on data lake storage account
 resource "azurerm_role_assignment" "iam_syn_dls" {
   scope                = azurerm_storage_account.dls.id
   role_definition_name = "Storage Blob Data Contributor"
